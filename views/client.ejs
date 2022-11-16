@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+  <style>
+    .form-control {
+      border: none;
+    }
+
+    .form-control:focus {
+      box-shadow: none;
+    }
+
+    .search-box {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #212529;
+      background-color: #fff;
+      border: 1px solid #ced4da;
+      border-radius: 0.375rem;
+      transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    .search-box-focus {
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+    }
+
+    .list-group-item {
+      border: none;
+    }
+
+    .list-group {
+      max-height: 201px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 获得焦点的时候查询，keydown的时候查询 -->
+  <div class="container" style="margin-top: 6px;">
+    <div class="row justify-content-sm-center">
+      <label for="name" class="col-form-label col-sm-2">姓名：</label>
+      <div class="col-sm-6">
+        <div class="search-box">
+          <input type="text" class="form-control" id="name" autocomplete="off">
+          <div class="list-group" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let searchBox = document.querySelector('.search-box')
+    let formControl = document.querySelector('#name')
+    let listGroup = document.querySelector('.list-group')
+
+    // 点击跳转，onmousedown先于onblur执行
+    listGroup.onmousedown = function (e) {
+      if (e.target.nodeName === 'A') {
+        location.assign(e.target.dataset.href)
+      }
+    }
+
+    formControl.onclick = showList
+    formControl.onkeyup = debounce(showList, 300)
+    formControl.onblur = hideList  // onblur先执行导致跳转不了，使用onmousedown事件
+
+    // 显示List
+    function showList(e) {
+      searchBox.className = 'search-box search-box-focus'
+      listGroup.style.display = 'block'
+      listGroup.textContent = ''  // 每次清空
+
+      let text = formControl.value
+      if (text) {
+        searchName(text)
+      }
+    }
+
+    // 隐藏List
+    function hideList(e) {
+      searchBox.className = 'search-box'
+      listGroup.style.display = 'none'
+    }
+
+    // ajax查询
+    function searchName(text) {
+      // ajax
+      let xhr = new XMLHttpRequest()
+      xhr.open('GET', `/server?text=${text}`)
+      xhr.send()
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          let data = xhr.responseText
+          data = JSON.parse(data)
+
+          if (!data.length) {
+            console.log('hide')
+          } else {
+            console.log('show')
+
+            data.forEach(element => {
+              let aEle = document.createElement('a')
+
+              aEle.className = 'list-group-item list-group-item-action'
+              aEle.setAttribute('data-href', `https://www.baidu.com/s?wd=${element.name}`)
+              aEle.textContent = element.name
+              listGroup.appendChild(aEle)
+            })
+
+            // 添加border-top
+            listGroup.children[0].style.borderTop = '1px solid #ced4da'
+            listGroup.children[0].style.borderRadius = '0'
+          }
+        }
+      }
+    }
+
+    // 防抖
+    function debounce(func, wait) {
+      let time = null
+
+      return function () {
+        if (time !== null) clearTimeout(time)
+
+        time = setTimeout(func, wait)
+      }
+    }
+    
+  </script>
+
+</body>
+
+</html>
